@@ -41,14 +41,16 @@ B = uniformPoints(-1000, 1000, 1000)
 
 # algorithm for Yau Hausdorff distance calculation starts - 
 
-def Bsearch (x, A) :
+def Bsearch (x, A, acc) :
     large = len(A) - 1
     small = 0
     while (small <= large) :
         mid = (small + large) // 2
-        if (A[mid] < x) :
+        amid = math.floor(A[mid] * (10**acc))
+        accx = math.floor(x * (10**acc))
+        if (amid < accx) :
             small = mid + 1
-        elif (A[mid] > x) :
+        elif (amid > accx) :
             large = mid - 1
         else :
             return (mid, mid)
@@ -66,7 +68,7 @@ def Bsearch (x, A) :
 #         else :
 #             return (A[0] + t)
 
-def minHausdorff (A, B) :
+def minHausdorff (A, B, acc = 5) :
     A.sort()
     B.sort()
     if (A[-1] - A[0] < B[-1] - B[0]) :
@@ -78,14 +80,15 @@ def minHausdorff (A, B) :
     s1 = []
     s2 = []
     for i in range(len(A)) :
-        sresult1 = Bsearch(B[-1] + A[i], B)
-        sresult2 = Bsearch(-A[0] + A[i], B)
+        sresult1 = Bsearch(B[-1] + A[i], B, acc)
+        sresult2 = Bsearch(-A[0] + A[i], B, acc)
         if ((sresult1 == sresult2) and (sresult1[0]> -1) and (sresult1[1] < len(B))):
             s1.append((B[sresult1[0]] - A[i], B[sresult1[1]] - A[i]))
     Aminus = list (map(lambda x : -x, A))
+    Aminus = Aminus[::-1]
     for j in range(len(B)) :
-        sresult1 = Bsearch(B[-1] - B[j], Aminus)
-        sresult2 = Bsearch(-A[0] - B[j], Aminus)
+        sresult1 = Bsearch(B[-1] - B[j], Aminus, acc)
+        sresult2 = Bsearch(-A[0] - B[j], Aminus, acc)
         if ((sresult1 == sresult2) and (sresult1[0] > -1) and (sresult1[1] < len(Aminus))) :
                 s2.append((Aminus[sresult1[0]] + B[j], Aminus[sresult1[1]] + B[j]))
     s = list(set(s1) | set(s2))
@@ -96,7 +99,7 @@ def minHausdorff (A, B) :
             if (s[j][1] < s[i][1]) :
                 s.pop(j)
             j = j + 1
-    mindist = -(B[-1] + A[0])/2
+    mindist = abs(-(B[-1] + A[0])/2)
     for inter in s :
         if (B[-1] <= -A[0]) :
             d = min ([(inter[0] - A[0])/2, (inter[1] + B[-1])/2])
@@ -128,11 +131,12 @@ def ebHausdorff (A, B, metric) :
     return cmax
 
 def yauHausdorff(A, B) :
-    theta_set = []
-    phi_set = []
-    for i in range(50) :
-        theta_set.append(pxAtheta(A, uniform(0, 2*math.pi)))
-        phi_set.append(pxBphi(B, uniform(0, 2*math.pi)))
+    theta_set = [pxAtheta(A, 0.0)]
+    phi_set = [pxBphi(B, 0.0)]
+    N = 50
+    for i in range(N) :
+        theta_set.append(pxAtheta(A, uniform(2*math.pi*i/N, 2*math.pi*(i+1)/N)))
+        phi_set.append(pxAtheta(B, uniform(2*math.pi*i/N, 2*math.pi*(i+1)/N)))
     return (ebHausdorff(theta_set, phi_set, minHausdorff))
 
 
