@@ -215,7 +215,7 @@ def yauHausdorff(A, B) :
         theta_set.append(pxAtheta(A, uniform(2*math.pi*i/N, 2*math.pi*(i+1)/N)))
         phi_set.append(pxBphi(B, uniform(2*math.pi*i/N, 2*math.pi*(i+1)/N)))
         # theta_set.append(pxAtheta(A, math.pi*(2*i+1)/N))
-        # phi_set.append(pxAtheta(B, math.pi*(2*i+1)/N))
+        # phi_set.append(pxBphi(B, math.pi*(2*i+1)/N))
     return (ebHausdorff(theta_set, phi_set, minHausdorff))
     # return (minHausdorff(theta_set[1], phi_set[1]))
 
