@@ -2,89 +2,56 @@ import sys
 from random import uniform
 from random import gauss
 import math
+import numpy as np
 from numpy.random import permutation as perm
 from numpy.random import shuffle 
+from numpy.random import seed
 import pandas as pd
 from urllib.request import urlretrieve
+import randrot
 
 protein1 = sys.argv[1]
 protein2 = sys.argv[2]
 
 # Converting data from database into dataframe
-try :
-    f1 = open("PDB/" + protein1 + ".pdb.txt")
-except FileNotFoundError :
-    urlretrieve("https://files.rcsb.org/view/" + protein1 + ".pdb", "PDB/" + protein1 + ".pdb.txt")
-    f1 = open("PDB/" + protein1 + ".pdb.txt")    
 
-# df1 = {"S.No." : [], "Atom" : [], "Atom Type" : [], "AA" : [], "AA no." : [], "Branch" : [], "X" : [], "Y" : [], "Z" : [], "Occupancy" : [], "Temp Factor" : []}
-df1 = {"Atom" : [], "Atom Type" : [], "AA" : [], "AA no." : [], "Branch" : [], "X" : [], "Y" : [], "Z" : [], "Occupancy" : [], "Temp Factor" : []}
-for line in f1.readlines() :
-    # data = list(filter(lambda x : x != '', line.split(" ")))
-    # if (data[0] == 'ATOM') :
-        # df1["S.No."].append(data[1])
-        # df1["Atom Type"].append(data[2])
-        # df1["AA"].append(data[3])
-        # df1["Branch"].append(data[4])
-        # df1["AA no."].append(int(data[5]))
-        # df1["X"].append(float(data[6]))
-        # df1["Y"].append(float(data[7]))
-        # df1["Z"].append(float(data[8]))
-        # df1["Occupancy"].append(float(data[9]))
-        # df1["Temp Factor"].append(float(data[10]))
-        # df1["Atom"].append(data[11])
-    if (line[0:4] == "ATOM") :
-        df1["Atom Type"].append(line[13:17].strip())
-        df1["AA"].append(line[17:21].strip())
-        df1["Branch"].append(line[21:22])
-        df1["AA no."].append(int(line[22:26].strip()))
-        df1["X"].append(float(line[26:38].strip()))
-        df1["Y"].append(float(line[38:46].strip()))
-        df1["Z"].append(float(line[46:54].strip()))
-        df1["Occupancy"].append(float(line[54:60].strip()))
-        df1["Temp Factor"].append(float(line[60:66].strip()))
-        df1["Atom"].append(line[77:].strip())
+def readPDB (protein) : 
+    try :
+        f1 = open("PDB/" + protein + ".pdb.txt")
+    except FileNotFoundError :
+        urlretrieve("https://files.rcsb.org/view/" + protein + ".pdb", "PDB/" + protein + ".pdb.txt")
+        f1 = open("PDB/" + protein + ".pdb.txt")
+    # df1 = {"S.No." : [], "Atom" : [], "Atom Type" : [], "AA" : [], "AA no." : [], "Branch" : [], "X" : [], "Y" : [], "Z" : [], "Occupancy" : [], "Temp Factor" : []}
+    df1 = {"Atom" : [], "Atom Type" : [], "AA" : [], "AA no." : [], "Branch" : [], "X" : [], "Y" : [], "Z" : [], "Occupancy" : [], "Temp Factor" : []}
+    for line in f1.readlines() :
+        # data = list(filter(lambda x : x != '', line.split(" ")))
+        # if (data[0] == 'ATOM') :
+            # df1["S.No."].append(data[1])
+            # df1["Atom Type"].append(data[2])
+            # df1["AA"].append(data[3])
+            # df1["Branch"].append(data[4])
+            # df1["AA no."].append(int(data[5]))
+            # df1["X"].append(float(data[6]))
+            # df1["Y"].append(float(data[7]))
+            # df1["Z"].append(float(data[8]))
+            # df1["Occupancy"].append(float(data[9]))
+            # df1["Temp Factor"].append(float(data[10]))
+            # df1["Atom"].append(data[11])
+        if (line[0:4] == "ATOM") :
+            df1["Atom Type"].append(line[13:17].strip())
+            df1["AA"].append(line[17:21].strip())
+            df1["Branch"].append(line[21:22])
+            df1["AA no."].append(int(line[22:26].strip()))
+            df1["X"].append(float(line[26:38].strip()))
+            df1["Y"].append(float(line[38:46].strip()))
+            df1["Z"].append(float(line[46:54].strip()))
+            df1["Occupancy"].append(float(line[54:60].strip()))
+            df1["Temp Factor"].append(float(line[60:66].strip()))
+            df1["Atom"].append(line[77:].strip())
+    return (pd.DataFrame(df1))
 
-df1 = pd.DataFrame(df1)
-
-
-#same with structure 2
-try :
-    f2 = open("PDB/" + protein2 + ".pdb.txt")
-except FileNotFoundError :
-    urlretrieve("https://files.rcsb.org/view/" + protein2 + ".pdb", "PDB/" + protein2 + ".pdb.txt")
-    f2 = open("PDB/" + protein2 + ".pdb.txt")    
-
-# df2 = {"S.No." : [], "Atom" : [], "Atom Type" : [], "AA" : [], "AA no." : [], "Branch" : [], "X" : [], "Y" : [], "Z" : [], "Occupancy" : [], "Temp Factor" : []}
-df2 = {"Atom" : [], "Atom Type" : [], "AA" : [], "AA no." : [], "Branch" : [], "X" : [], "Y" : [], "Z" : [], "Occupancy" : [], "Temp Factor" : []}
-for line in f2.readlines() :
-    # data = list(filter(lambda x : x != '', line.split(" ")))
-    # if (data[0] == 'ATOM') :
-        # df2["S.No."].append(data[1])
-        # df2["Atom Type"].append(data[2])
-        # df2["AA"].append(data[3])
-        # df2["Branch"].append(data[4])
-        # df2["AA no."].append(int(data[5]))
-        # df2["X"].append(float(data[6]))
-        # df2["Y"].append(float(data[7]))
-        # df2["Z"].append(float(data[8]))
-        # df2["Occupancy"].append(float(data[9]))
-        # df2["Temp Factor"].append(float(data[10]))
-        # df2["Atom"].append(data[11])
-    if (line[0:4] == "ATOM") :
-        df2["Atom Type"].append(line[13:17].strip())
-        df2["AA"].append(line[17:21].strip())
-        df2["Branch"].append(line[21:22])
-        df2["AA no."].append(int(line[22:26].strip()))
-        df2["X"].append(float(line[26:38].strip()))
-        df2["Y"].append(float(line[38:46].strip()))
-        df2["Z"].append(float(line[46:54].strip()))
-        df2["Occupancy"].append(float(line[54:60].strip()))
-        df2["Temp Factor"].append(float(line[60:66].strip()))
-        df2["Atom"].append(line[77:].strip())
-
-df2 = pd.DataFrame(df2)
-
+df1 = readPDB(protein1)
+df2 = readPDB(protein2)
 
 ## generating points from protein data frames
 
@@ -207,21 +174,112 @@ def ebHausdorff (A, B, metric) :
         cmax = max([cmax, cmin])
     return cmax
 
+def bruteForceYH (A, B) :
+    amax = 0
+    for pa in A :
+        bmin = math.inf
+        for pb in B :
+            d = minHausdorff(pa, pb)
+            bmin = min([bmin, d])
+        amax = max([amax, bmin])
+    return amax
+
+def centroid(X):
+    C = X.mean(axis=0)
+    return C
+
+def kabsch(P, Q):
+    # Computation of the covariance matrix
+    P = (P - centroid(P))
+    Q = (Q - centroid(Q))
+    C = np.dot(np.transpose(P), Q)
+
+    # Computation of the optimal rotation matrix
+    # This can be done using singular value decomposition (SVD)
+    # Getting the sign of the det(V)*(W) to decide
+    # whether we need to correct our rotation matrix to ensure a
+    # right-handed coordinate system.
+    # And finally calculating the optimal rotation matrix U
+    V, S, W = np.linalg.svd(C)
+    d = (np.linalg.det(V) * np.linalg.det(W)) < 0.0
+
+    if d:
+        S[-1] = -S[-1]
+        V[:, -1] = -V[:, -1]
+
+    # Create Rotation matrix U
+    U = np.dot(V, W)
+
+    return U
+
+def rotate(P, R) :
+    return np.dot(P, R)
+
+def bruteForceHDD3 (A, B) :
+    dist_mat = np.zeros(shape = (len(A), len(B)))
+
+    # Directed HDD from A to B
+    amax = 0
+    for i in range(0, len(A)) :
+        bmin = math.inf
+        for j in range(0, len(B)) :
+            d = dist_mat[i][j] = minHausdorff(A[i], B[j])
+            if (d < bmin) :
+                bmin = d
+        if (bmin > amax) :
+            amax = bmin
+    
+    # Directed HDD from B to A
+    bmax = 0
+    for i in range(0, len(B)) :
+        amin = math.inf
+        for j in range(0, len(A)) :
+            d = dist_mat[j][i]
+            if (d < amin) :
+                amin = d
+        if (amin > bmax) :
+            bmax = amin
+    
+    return (max ([amax, bmax]))
+
+
 def yauHausdorff(A, B) :
-    theta_set = [pxAtheta(A, 0.0)]
-    phi_set = [pxBphi(B, 0.0)]
+    # theta_set = [pxAtheta(A, 0.0)]
+    # phi_set = [pxBphi(B, 0.0)]
+    theta_set = []
+    phi_set = []
     N = 50
-    for i in range(N) :
-        theta_set.append(pxAtheta(A, uniform(2*math.pi*i/N, 2*math.pi*(i+1)/N)))
-        phi_set.append(pxBphi(B, uniform(2*math.pi*i/N, 2*math.pi*(i+1)/N)))
-        # theta_set.append(pxAtheta(A, math.pi*(2*i+1)/N))
-        # phi_set.append(pxAtheta(B, math.pi*(2*i+1)/N))
-    return (ebHausdorff(theta_set, phi_set, minHausdorff))
+    # for i in range(N) :
+    #     theta1 = uniform (2*math.pi*i/N, 2*math.pi*(i+1)/N)
+    #     Aarr = np.array(A)
+    #     Barr = np.array(B)
+    #     # R0 = kabsch (Aarr, Barr)
+    #     A1 = rotate(A, np.array([[math.cos(theta1), math.sin(theta1), 0], [-math.sin(theta1), math.cos(theta1), 0], [0,0,1]]))
+    #     # A1 = rotate(Aarr, R0)
+    #     # R is the rotation matrix that minimizes RMSD b/w A1 and B 
+    #     R = kabsch(Barr, A1)
+    #     theta_set.append(A1[:,0].tolist())
+    #     phi_set.append(rotate(Barr, R)[:,0].tolist())
+    #     # theta_set.append(pxAtheta(A, theta1))
+    #     # phi_set.append(pxBphi(B, uniform(2*math.pi*i/N, 2*math.pi*(i+1)/N)))
+    #     # x = uniform(2*math.pi*i/N, 2*math.pi*(i+1)/N)
+    #     # theta_set.append(pxAtheta(A, x))
+    #     # phi_set.append(pxBphi(B, x))
+    # return (ebHausdorff(theta_set, phi_set, minHausdorff))
     # return (minHausdorff(theta_set[1], phi_set[1]))
+    seed(100)
+    for i in range(N) :
+        theta_set.append(np.asarray(randrot.generate_3d()))
+        phi_set.append(np.asarray(randrot.generate_3d()))
+    Xa = list(map(lambda theta : rotate(A, theta)[:, 0].tolist(), theta_set))
+    Xb = list(map(lambda phi : rotate(B, phi)[:, 0].tolist(), phi_set))
+    # return (max([ebHausdorff(Xa, Xb, minHausdorff), ebHausdorff(Xb, Xa, minHausdorff)]))
+    # return (max([bruteForceYH(Xa, Xb), bruteForceYH(Xb, Xa)]))
+    return bruteForceHDD3(Xa, Xb)
 
 
 # random point checking 
-print(yauHausdorff(structure1, structure1))
+print(yauHausdorff(structure1, structure2))
 # print("Yau Hausdorff for A vs A : ", yauHausdorff(A,A))
 # Aold = A
 # shuffle(A)
