@@ -9,6 +9,7 @@ from numpy.random import seed
 import pandas as pd
 from urllib.request import urlretrieve
 import randrot
+import matplotlib.pyplot as plt
 
 protein1 = sys.argv[1]
 protein2 = sys.argv[2]
@@ -66,6 +67,7 @@ for i in range(len(df2.index)) :
 ## checking for random points --
 # random point generation
 
+seed(0)
 def uniformArray (lb, ub, num) :
     A = []
     for i in range(num) :
@@ -78,8 +80,8 @@ def uniformPoints (lb, ub, num) :
     Az = uniformArray(lb, ub, num)
     return (list(map(lambda x,y,z : (x,y,z), Ax, Ay, Az)))
 
-A = uniformPoints(-1000, 1000, 1000)
-B = uniformPoints(-1000, 1000, 100)
+A = uniformPoints(-100, 100, 100)
+B = uniformPoints(-100, 100, 100)
 
 ## end of random points generation 
 
@@ -159,6 +161,12 @@ def pxAtheta (A, theta) :
 def pxBphi (B, phi) :
     return (list (map(lambda p : (p[0]*math.cos(phi) + p[2]*math.sin(phi)), B)))
 
+def generalRot(A, theta3) :
+    rx = [[1,0,0], [0, math.cos(theta3[0]), -math.sin(theta3[0])], [0, math.sin(theta3[0]), math.cos(theta3[0])]]
+    ry = [[math.cos(theta3[1]), 0, math.sin(theta3[1])], [0, 1, 0], [-math.sin(theta3[1]), 0, math.cos(theta3[1])]]
+    rz = [[math.cos(theta3[2]), math.sin(theta3[2]), 0], [-math.sin(theta3[2]), math.cos(theta3[2]), 0], [0, 0, 1]]
+    return (np.dot(A, np.dot(rx, np.dot(ry, rz))))
+
 def ebHausdorff (A, B, metric) :
     cmax = 0
     Ar = list(perm(A))
@@ -217,7 +225,6 @@ def rotate(P, R) :
 
 def bruteForceHDD3 (A, B) :
     dist_mat = np.zeros(shape = (len(A), len(B)))
-
     # Directed HDD from A to B
     amax = 0
     for i in range(0, len(A)) :
@@ -228,7 +235,6 @@ def bruteForceHDD3 (A, B) :
                 bmin = d
         if (bmin > amax) :
             amax = bmin
-    
     # Directed HDD from B to A
     bmax = 0
     for i in range(0, len(B)) :
@@ -239,11 +245,43 @@ def bruteForceHDD3 (A, B) :
                 amin = d
         if (amin > bmax) :
             bmax = amin
-    
     return (max ([amax, bmax]))
 
+def ebHDD3 (A, B) :
+    dist_mat = np.full((len(A), len(B)), fill_value = np.nan)
 
-def yauHausdorff(A, B) :
+    # directed hdd from A to B
+    cmax = 0
+    Ar = list(perm(A))
+    Br = list(perm(B))
+    for i in range(len(Ar)) :
+        cmin = math.inf
+        for j in range(len(Br)) :
+            d = dist_mat[i][j] = minHausdorff(Ar[i], Br[j])
+            if (d < cmax) :
+                cmin = 0
+                break
+            cmin = min([cmin, d])
+        cmax = max([cmax, cmin])
+    
+    # directed hdd from B to A
+    dmax = 0
+    for i in range(len(Ar)) :
+        dmin = math.inf
+        for j in range(len(Br)) :
+            if (np.isnan(dist_mat[i][j])) :
+                d = dist_mat[i][j] = minHausdorff(Ar[i], Br[j])
+            else :
+                d = dist_mat[i][j]
+            if (d < dmax) :
+                dmin = 0
+                break
+            dmin = min([dmin, d])
+        dmax = max([dmax, dmin])
+    
+    return (max([dmax, cmax]))
+
+def yauHausdorff(A, B, s = 0) :
     # theta_set = [pxAtheta(A, 0.0)]
     # phi_set = [pxBphi(B, 0.0)]
     theta_set = []
@@ -267,7 +305,7 @@ def yauHausdorff(A, B) :
     #     # phi_set.append(pxBphi(B, x))
     # return (ebHausdorff(theta_set, phi_set, minHausdorff))
     # return (minHausdorff(theta_set[1], phi_set[1]))
-    seed(100)
+    seed(s)
     for i in range(N) :
         theta_set.append(np.asarray(randrot.generate_3d()))
         phi_set.append(np.asarray(randrot.generate_3d()))
@@ -277,9 +315,82 @@ def yauHausdorff(A, B) :
     # return (max([bruteForceYH(Xa, Xb), bruteForceYH(Xb, Xa)]))
     return bruteForceHDD3(Xa, Xb)
 
+def minCell (A, B, N, itheta = 0, iphi = 0, ftheta = 2*math.pi, fphi = 2*math.pi) :
+    theta_set = []
+    phi_set = []
+    for i in range(N) :
+        theta_set.append(itheta + (ftheta - itheta)*i/N)
+        phi_set.append(iphi + (fphi - iphi)*i/N)
+    # Xa = list(map(lambda theta : rotate(A, theta)[:, 0].tolist(), theta_set))
+    # Xb = list(map(lambda phi : rotate(B, phi)[:, 0].tolist(), phi_set))
+    Xa = list(map(lambda theta : pxAtheta(A, theta), theta_set))
+    Xb = list(map(lambda phi : pxBphi(B, phi), phi_set))
+    mindis, mintheta, minphi = (math.inf, 0, 0)
+    for i in range(len(Xa)) :
+        for j in range(len(Xb)) :
+            dis = minHausdorff(Xa[i], Xb[j])
+            if (dis < mindis) :
+                mindis = dis
+                mintheta = theta_set[i]
+                minphi = phi_set[j]
+    return (mintheta, minphi)
+
+def yhMittal (A, B) :
+    # N = 18
+    N = 9
+    itheta = 0
+    iphi = 0
+    ftheta = 2*math.pi
+    fphi = 2*math.pi
+    mtheta, mphi = (math.pi, math.pi)
+    while ((abs(ftheta - itheta) < math.pi/180) and (abs(fphi - iphi) < math.pi/180)) :
+        mtheta, mphi = minCell(A, B, N, itheta, iphi, ftheta, fphi)
+        tdiff = (ftheta - itheta)/N
+        itheta = mtheta - tdiff
+        ftheta = mtheta + tdiff
+        pdiff = (fphi - iphi)/N
+        iphi = mphi - pdiff
+        fphi = mphi + pdiff
+    k = 50
+    theta_set = list(map(lambda x : mtheta + x*(ftheta - itheta)/k, range(-math.floor(k/2), 1 + math.floor(k/2))))
+    phi_set = list(map(lambda x : mphi + x*(fphi - iphi)/k, range(-math.floor(k/2), 1 + math.floor(k/2))))
+    Xa = list(map(lambda theta : pxAtheta(A, theta), theta_set))
+    Xb = list(map(lambda phi : pxBphi(B, phi), phi_set))
+    return bruteForceHDD3(Xa, Xb)
+
+        
+# print(yauHausdorff(structure1, structure2, 150))
+print (yhMittal(structure1, structure2))
+
+'''
+            Results for yhMittal (with N = 9 rather than 18 - one can get better and better) :: 
+
+        1R93    1WFZ    2D2A    2JNV
+1R93    5.488   7.410   7.942   6.768
+1WFZ    7.410   6.513   7.847   18.41
+2D2A    7.942   7.847   17.09   15.84
+2JNV    6.768   18.41   3.059   4.319
+
+'''
+
+
 
 # random point checking 
-print(yauHausdorff(structure1, structure2))
+# X = range(10)
+# Y = list(map(lambda x : yauHausdorff(A, A, x), X))
+# # plt.plot(X, Y)
+# # plt.show()
+# ymin = Y[0]
+# minx = 0
+# for i in range(1, len(X)):
+#     y = Y[i]
+#     x = X[i]
+#     if (y < ymin) :
+#         minx = x
+#         ymin = y
+
+# print (minx)
+
 # print("Yau Hausdorff for A vs A : ", yauHausdorff(A,A))
 # Aold = A
 # shuffle(A)
